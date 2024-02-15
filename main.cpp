@@ -1,7 +1,22 @@
+// Resistor - Tool to calculate resistor networks for a specific resistance out of E series resistors
+// Copyright (C) 2024  Alexander Kaschta
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 #include <chrono>
 #include <cmath>
 #include <iostream>
-#include <string>
 #include <tuple>
 #include <vector>
 #include <iomanip>
@@ -269,26 +284,136 @@ closest_series4_parallel3_in_series(double searchValue, int closest_index, std::
     return std::make_tuple(closest_value, closest_index_1, closest_index_2, closest_index_3, closest_index_4);
 }
 
+void search(double searchValue, std::vector<double> entries) {
+    // Check for n = 1
+    std::cout << "=====  n = 1  =====" << std::endl;
+    const auto closest_1 = closest_simple(searchValue, entries);
+
+    if (std::get<0>(closest_1) == searchValue) {
+        std::cout << "Use a single resistor of " << std::get<0>(closest_1) << " Ohm!" << std::endl;
+        // Abort as an optimal solution has been found
+        return;
+    }
+    std::cout << "Closest index: " << std::get<1>(closest_1) << std::endl;
+    std::cout << "Closest value: " << std::setprecision(10) << std::get<0>(closest_1) << std::endl;
+
+    // Check for n = 2
+    std::cout << "=====  n = 2  =====" << std::endl;
+
+    const auto closest_2_series = closest_series2(searchValue, std::get<1>(closest_1), entries);
+
+    if (std::get<0>(closest_2_series) == searchValue) {
+        std::cout << "Use two resistors " << entries[std::get<1>(closest_2_series)] << " and "
+                  << entries[std::get<2>(closest_2_series)] << " in series!" << std::endl;
+        // Abort as an optimal solution has been found
+        return;
+    }
+
+    const auto closest_2_parallel = closest_parallel2(searchValue, std::get<1>(closest_1), entries);
+    if (std::get<0>(closest_2_parallel) == searchValue) {
+        std::cout << "Use two resistors " << entries[std::get<1>(closest_2_parallel)] << " and "
+                  << entries[std::get<2>(closest_2_parallel)] << " in parallel!" << std::endl;
+        // Abort as an optimal solution has been found
+        return;
+    }
+
+    std::cout << "Series:" << std::endl;
+    std::cout << "Closest index: " << std::get<1>(closest_2_series) << ", " << std::get<2>(closest_2_series)
+              << std::endl;
+    std::cout << "Closest value: " << std::setprecision(10) << std::get<0>(closest_2_series) << std::endl;
+
+    std::cout << "Parallel:" << std::endl;
+    std::cout << "Closest index: " << std::get<1>(closest_2_parallel) << ", " << std::get<2>(closest_2_parallel)
+              << std::endl;
+    std::cout << "Closest value: " << std::setprecision(10) << std::get<0>(closest_2_parallel) << std::endl;
+
+    // Check for n = 3
+    std::cout << "=====  n = 3  =====" << std::endl;
+    const auto closest_3_series = closest_series3(searchValue, std::get<1>(closest_1), entries);
+
+    if (std::get<0>(closest_3_series) == searchValue) {
+        std::cout << "Use three resistors " << entries[std::get<1>(closest_3_series)] << ", "
+                  << entries[std::get<2>(closest_3_series)] << " and " << entries[std::get<3>(closest_3_series)]
+                  << " in series!" << std::endl;
+        return;
+    }
+
+    const auto closest_3_parallel_in_series = closest_series3_parallel_in_series(searchValue, std::get<1>(closest_1),
+                                                                                 entries);
+    if (std::get<0>(closest_3_parallel_in_series) == searchValue) {
+        std::cout << "Some optimal solution found" << std::endl;
+        return;
+    }
+
+    const auto closest_3_series_in_parallel = closest_series3_series_in_parallel(searchValue, std::get<1>(closest_1),
+                                                                                 entries);
+
+    if (std::get<0>(closest_3_series_in_parallel) == searchValue) {
+        std::cout << "Some optimal solution found" << std::endl;
+        return;
+    }
+
+    const auto closest_3_parallel = closest_parallel3(searchValue, std::get<1>(closest_1), entries);
+
+    if (std::get<0>(closest_3_parallel) == searchValue) {
+        std::cout << "Some optimal solution found" << std::endl;
+        return;
+    }
+
+    std::cout << "Series:" << std::endl;
+    std::cout << "Closest index: " << std::get<1>(closest_3_series) << ", " << std::get<2>(closest_3_series)
+              << ", " << std::get<3>(closest_3_series) << std::endl;
+    std::cout << "Closest value: " << std::setprecision(10) << std::get<0>(closest_3_series) << std::endl;
+
+    std::cout << "Parallel in series" << std::endl;
+    std::cout << "Closest index: " << std::get<1>(closest_3_parallel_in_series) << ", "
+              << std::get<2>(closest_3_parallel_in_series)
+              << ", " << std::get<3>(closest_3_parallel_in_series) << std::endl;
+    std::cout << "Closest value: " << std::setprecision(10) << std::get<0>(closest_3_parallel_in_series) << std::endl;
+
+    std::cout << "Series in parallel" << std::endl;
+    std::cout << "Closest index: " << std::get<1>(closest_3_series_in_parallel) << ", "
+              << std::get<2>(closest_3_series_in_parallel)
+              << ", " << std::get<3>(closest_3_series_in_parallel) << std::endl;
+    std::cout << "Closest value: " << std::setprecision(10) << std::get<0>(closest_3_series_in_parallel) << std::endl;
+
+    std::cout << "Parallel" << std::endl;
+    std::cout << "Closest index: " << std::get<1>(closest_3_parallel) << ", " << std::get<2>(closest_3_parallel)
+              << ", " << std::get<3>(closest_3_parallel) << std::endl;
+    std::cout << "Closest value: " << std::setprecision(10) << std::get<0>(closest_3_parallel) << std::endl;
+
+    // Check for n = 4
+    std::cout << "=====  n = 4  =====" << std::endl;
+    const auto closest_4_series = closest_series4(searchValue, std::get<1>(closest_1), entries);
+
+    if (std::get<0>(closest_4_series) == searchValue) {
+        std::cout << "Use four resistors " << entries[std::get<1>(closest_4_series)] << ", "
+                  << entries[std::get<2>(closest_4_series)] << ", " << entries[std::get<3>(closest_4_series)] <<
+                  " and " << entries[std::get<4>(closest_4_series)] << " in series!" << std::endl;
+        return;
+    }
+}
+
 
 int main() {
-    std::cout << "Starting software!" << std::endl;
-
     double searchValue = 63059.0;
+
+    std::cout << "Value to search: " << searchValue << std::endl;
 
     auto t1 = std::chrono::high_resolution_clock::now();
 
     // E3 series
-    std::vector<double> series3 {1.0, 2.2, 4.7};
+    std::vector<double> series3{1.0, 2.2, 4.7};
 
     // E6 series
-    std::vector<double> series6 {1.0, 1.5, 2.2, 3.3, 4.7, 6.8};
+    std::vector<double> series6{1.0, 1.5, 2.2, 3.3, 4.7, 6.8};
 
     // E12 series
     std::vector<double> series12{1.0, 1.2, 1.5, 1.8, 2.2, 2.7, 3.3, 3.9, 4.7, 5.6, 6.8, 8.2};
 
     // E24 series
     std::vector<double> series{1.0, 1.1, 1.2, 1.3, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.7, 3.0, 3.3, 3.6, 3.9, 4.3, 4.7,
-                                 5.1, 5.6, 6.2, 6.8, 7.5, 8.2, 9.1};
+                               5.1, 5.6, 6.2, 6.8, 7.5, 8.2, 9.1};
 
     // E48 series
     std::vector<double> series48{1.00, 1.05, 1.10, 1.15, 1.21, 1.27, 1.33, 1.40, 1.47, 1.54, 1.62, 1.69, 1.78, 1.87,
@@ -297,13 +422,13 @@ int main() {
                                  7.50, 7.87, 8.25, 8.66, 9.09, 9.53};
 
     // E96 series
-    std::vector<double> series96{1.00, 1.02, 1.05, 1.07, 1.10, 1.13, 1.15, 1.18, 1.21, 1.24, 1.27, 1.30, 1.33, 1.37, 1.40,
-                               1.43, 1.47, 1.50, 1.54, 1.58, 1.62, 1.65, 1.69, 1.74, 1.78, 1.82, 1.87, 1.91, 1.96, 2.00,
-                               2.05, 2.10, 2.15, 2.21, 2.26, 2.32, 2.37, 2.43, 2.49, 2.55, 2.61, 2.67, 2.74, 2.80, 2.87,
-                               2.94, 3.01, 3.09, 3.16, 3.24, 3.32, 3.40, 3.48, 3.57, 3.65, 3.74, 3.83, 3.92, 4.02, 4.12,
-                               4.22, 4.32, 4.42, 4.53, 4.64, 4.75, 4.87, 4.99, 5.11, 5.23, 5.36, 5.49, 5.62, 5.76, 5.90,
-                               6.04, 6.19, 6.34, 6.49, 6.65, 6.81, 6.98, 7.15, 7.32, 7.50, 7.68, 7.87, 8.06, 8.25, 8.45,
-                               8.66, 8.87, 9.09, 9.31, 9.53, 9.76};
+    std::vector<double> series96{1.00, 1.02, 1.05, 1.07, 1.10, 1.13, 1.15, 1.18, 1.21, 1.24, 1.27, 1.30, 1.33, 1.37,
+                                 1.40, 1.43, 1.47, 1.50, 1.54, 1.58, 1.62, 1.65, 1.69, 1.74, 1.78, 1.82, 1.87, 1.91,
+                                 1.96, 2.00, 2.05, 2.10, 2.15, 2.21, 2.26, 2.32, 2.37, 2.43, 2.49, 2.55, 2.61, 2.67,
+                                 2.74, 2.80, 2.87, 2.94, 3.01, 3.09, 3.16, 3.24, 3.32, 3.40, 3.48, 3.57, 3.65, 3.74,
+                                 3.83, 3.92, 4.02, 4.12, 4.22, 4.32, 4.42, 4.53, 4.64, 4.75, 4.87, 4.99, 5.11, 5.23,
+                                 5.36, 5.49, 5.62, 5.76, 5.90, 6.04, 6.19, 6.34, 6.49, 6.65, 6.81, 6.98, 7.15, 7.32,
+                                 7.50, 7.68, 7.87, 8.06, 8.25, 8.45, 8.66, 8.87, 9.09, 9.31, 9.53, 9.76};
 
     // E192 series
     std::vector<double> series192{1.00, 1.01, 1.02, 1.04, 1.05, 1.06, 1.07, 1.09, 1.10, 1.11, 1.13, 1.14, 1.15, 1.17,
@@ -337,98 +462,13 @@ int main() {
 
     std::cout << "Number of possible resistor values: " << entries.size() << std::endl;
 
-    // Check for n = 1
-    std::cout << "=====  n = 1  =====" << std::endl;
-    const auto closest_1 = closest_simple(searchValue, entries);
-
-    if (std::get<0>(closest_1) == searchValue) {
-        std::cout << "Use a single resistor of " << std::get<0>(closest_1) << " Ohm!" << std::endl;
-    }
-    std::cout << "Closest index: " << std::get<1>(closest_1) << std::endl;
-    std::cout << "Closest value: " << std::setprecision(10) << std::get<0>(closest_1) << std::endl;
-
-    // Check for n = 2
-    std::cout << "=====  n = 2  =====" << std::endl;
-
-    const auto closest_2_series = closest_series2(searchValue, std::get<1>(closest_1), entries);
-    const auto closest_2_parallel = closest_parallel2(searchValue, std::get<1>(closest_1), entries);
-
-    if (std::get<0>(closest_2_series) == searchValue) {
-        std::cout << "Use two resistors " << entries[std::get<1>(closest_2_series)] << " and "
-                  << entries[std::get<2>(closest_2_series)] << " in series!" << std::endl;
-    }
-    if (std::get<0>(closest_2_parallel) == searchValue) {
-        std::cout << "Use two resistors " << entries[std::get<1>(closest_2_parallel)] << " and "
-                  << entries[std::get<2>(closest_2_parallel)] << " in parallel!" << std::endl;
-    }
-
-    std::cout << "Series:" << std::endl;
-    std::cout << "Closest index: " << std::get<1>(closest_2_series) << ", " << std::get<2>(closest_2_series)
-              << std::endl;
-    std::cout << "Closest value: " << std::setprecision(10) << std::get<0>(closest_2_series) << std::endl;
-
-    std::cout << "Parallel:" << std::endl;
-    std::cout << "Closest index: " << std::get<1>(closest_2_parallel) << ", " << std::get<2>(closest_2_parallel)
-              << std::endl;
-    std::cout << "Closest value: " << std::setprecision(10) << std::get<0>(closest_2_parallel) << std::endl;
-
-    // Check for n = 3
-    std::cout << "=====  n = 3  =====" << std::endl;
-    const auto closest_3_series = closest_series3(searchValue, std::get<1>(closest_1), entries);
-    const auto closest_3_parallel_in_series = closest_series3_parallel_in_series(searchValue, std::get<1>(closest_1),
-                                                                                 entries);
-    const auto closest_3_series_in_parallel = closest_series3_series_in_parallel(searchValue, std::get<1>(closest_1),
-                                                                                 entries);
-    const auto closest_3_parallel = closest_parallel3(searchValue, std::get<1>(closest_1), entries);
-
-    if (std::get<0>(closest_3_series) == searchValue) {
-        std::cout << "Use three resistors " << entries[std::get<1>(closest_3_series)] << ", "
-                  << entries[std::get<2>(closest_3_series)] << " and " << entries[std::get<3>(closest_3_series)]
-                  << " in series!" << std::endl;
-    }
-    if (std::get<0>(closest_3_parallel_in_series) == searchValue) {
-        std::cout << "Some optimal solution found" << std::endl;
-    }
-    if (std::get<0>(closest_3_series_in_parallel) == searchValue) {
-        std::cout << "Some optimal solution found" << std::endl;
-    }
-    if (std::get<0>(closest_3_parallel) == searchValue) {
-        std::cout << "Some optimal solution found" << std::endl;
-    }
-
-    std::cout << "Series:" << std::endl;
-    std::cout << "Closest index: " << std::get<1>(closest_3_series) << ", " << std::get<2>(closest_3_series)
-              << ", " << std::get<3>(closest_3_series) << std::endl;
-    std::cout << "Closest value: " << std::setprecision(10) << std::get<0>(closest_3_series) << std::endl;
-
-    std::cout << "Parallel in series" << std::endl;
-    std::cout << "Closest index: " << std::get<1>(closest_3_parallel_in_series) << ", "
-              << std::get<2>(closest_3_parallel_in_series)
-              << ", " << std::get<3>(closest_3_parallel_in_series) << std::endl;
-    std::cout << "Closest value: " << std::setprecision(10) << std::get<0>(closest_3_parallel_in_series) << std::endl;
-
-    std::cout << "Series in parallel" << std::endl;
-    std::cout << "Closest index: " << std::get<1>(closest_3_series_in_parallel) << ", "
-              << std::get<2>(closest_3_series_in_parallel)
-              << ", " << std::get<3>(closest_3_series_in_parallel) << std::endl;
-    std::cout << "Closest value: " << std::setprecision(10) << std::get<0>(closest_3_series_in_parallel) << std::endl;
-
-    std::cout << "Parallel" << std::endl;
-    std::cout << "Closest index: " << std::get<1>(closest_3_parallel) << ", " << std::get<2>(closest_3_parallel)
-              << ", " << std::get<3>(closest_3_parallel) << std::endl;
-    std::cout << "Closest value: " << std::setprecision(10) << std::get<0>(closest_3_parallel) << std::endl;
-
-    // Check for n = 4
-    std::cout << "=====  n = 4  =====" << std::endl;
-    const auto closest_4_series = closest_series4(searchValue, std::get<1>(closest_1), entries);
-    const auto closest_4_parallel3_in_series = closest_series4_parallel3_in_series(searchValue, std::get<1>(closest_1),
-                                                                                   entries);
+    search(searchValue, entries);
 
     auto t2 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> ms_double = t2 - t1;
 
-    std::cout << "### TIME ###" << std::endl;
-    std::cout << "Duration in (ms): " << ms_double << std::endl;
+    std::cout << "=====  TIME  =====" << std::endl;
+    std::cout << "Duration in (ms): " << ms_double.count() << std::endl;
 
     return 0;
 }
